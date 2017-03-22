@@ -4,7 +4,6 @@ import requests
 import re
 from bs4 import BeautifulSoup
 from time import sleep
-from pprint import pprint
 
 dropbox = '/home/levo/Dropbox/Predictions/'
 
@@ -81,15 +80,18 @@ def parse_winner(result):
 
 def write_dropbox(result_dict):
     dropbox_file = open(dropbox + 'gameweek %d.txt' % (gameweek), 'w')
-    pprint(result_dict)
     for key, value in result_dict.items():
         score = parse_score(value)
         winner = parse_winner(value)
         teams = key.split(' v ')
         if winner != teams[0]:
-            dropbox_file.write(teams[0] + ' ' + score[2] + '-' + score[0] + ' ' + teams[1] + '\n')
+            res = teams[0] + ' ' + score[2] + '-' + score[0] + ' ' + teams[1] + '\n'
+            print(res)
+            dropbox_file.write(res)
         else:
-            dropbox_file.write(teams[0] + ' ' + score + ' ' + teams[1] + '\n')
+            res = teams[0] + ' ' + score + ' ' + teams[1] + '\n'
+            print(res)
+            dropbox_file.write(res)
     dropbox_file.close()
 
 
