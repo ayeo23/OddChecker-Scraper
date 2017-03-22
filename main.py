@@ -1,64 +1,98 @@
+#!/usr/bin/env python3
+
 import requests
+import re
 from bs4 import BeautifulSoup
-import time
+from time import sleep
+from pprint import pprint
 
-# Function will fetch GW number as the webpage will default to current GW.
+dropbox = '/home/levo/Dropbox/Predictions/'
 
-def getGameweek():
-    fplsite = requests.get('https://allthingsfpl.com/fantasy-football/gameweek-detail/')
-    soup = BeautifulSoup(fplsite.content, "html.parser")
-    gwheading = soup.find_all("h2")
-    gwnum = gwheading[0].text.split(' ')
-    gameweek = int(gwnum[1])
-    return gameweek
-
-gameweek = getGameweek()
-print(str("Getting Predictions for Gameweek " + str(gameweek)))
-
-#Setup of URL:
-
+# setup url
 baseurl = 'http://www.oddschecker.com/football/'
-
 country = 'english/'
 league = 'premier-league/'
 market = 'correct-score/'
 
+
+def getGameweek():
+    url = 'https://allthingsfpl.com/fantasy-football/gameweek-detail/'
+    fplsite = requests.get(url)
+    soup = BeautifulSoup(fplsite.content, "html.parser")
+    gwheading = soup.find_all("h2")
+    gwnum = gwheading[0].text.split(' ')
+    gameweek = int(gwnum[1])
+    print("Getting Predictions for Gameweek %d" % (gameweek))
+    return gameweek
+
+
 # Opens files needed to complete URL as well as the file to be written to.
-
-fixturesFile = open('D:\\Programming\\OddChecker Scraper\\fixtures\\gameweek %d' %(gameweek), 'r')
-readFixtures = fixturesFile.readlines()
-fixturesFile.close()
-dropboxFile = open('D:\\Dropbox\\Predictions\\gameweek %d.txt' %(gameweek), 'w')
-
-
-for fixture in readFixtures:
-
-    url = baseurl + country + league + fixture.lower().rstrip('\n') + '/' + market #OddChecker.com/country/league/fixture/correct-score/
-    # print(url)
-    try:
-        response = requests.get(url)
-    except Exception as e:
-        print(e)
-
-    reFormatFix = fixture.split('-v-') # splits the teams in two separate
-
-	# getting score
-    soup = BeautifulSoup(response.content, "html.parser")
-    tableData = soup.find_all("td", {"class":"sel nm"})
-    score = tableData[0].text
-    score = score.split(' ')
-
-    if score[0].rstrip() != reFormatFix[1].rstrip():
-        # print((reFormatFix[0].replace('-', ' ') + ' ' + score[1] + ' ' + reFormatFix[1].replace('-',' ')))
-        dropboxFile.write(reFormatFix[0].replace('-', ' ') + ' ' + score[1] + ' ' + reFormatFix[1].replace('-',' '))
-    else:
-        score = score[1]
-        # print(dropboxFile.write(reFormatFix[0].replace('-', ' ') + ' ' + score[2] + score[1] + score[0] + ' ' + reFormatFix[1].replace('-',' ')))
-        dropboxFile.write(reFormatFix[0].replace('-', ' ') + ' ' + score[2] + score[1] + score[0] + ' ' + reFormatFix[1].replace('-',' '))
+def read_fixtures(gameweek):
+    fixturesFile = open(r'./fixtures/gameweek %d' % (gameweek), 'r')
+    readFixtures = fixturesFile.readlines()
+    fixturesFile.close()
+    return readFixtures
 
 
-    time.sleep(2)
+def format_team(fixture):
+    remove_newline = fixture.rstrip('\n')
+    remove_hyphian = remove_newline.replace('-', ' ')
+    return remove_hyphian
 
-dropboxFile.close()
 
-print("Done... Your file is in Dropbox")
+def get_oddschecker(fixtures):
+    odds_data = {}
+    for fixture in fixtures:
+        clean_fixture = fixture.rstrip('\n')  # cleans fixture for url
+        url = baseurl + country + league + clean_fixture.lower() + '/' + market
+        try:
+            response = requests.get(url)
+        except Exception as e:
+            print(e)
+
+        soup = BeautifulSoup(response.content, "html.parser")
+        tableData = soup.find_all("td", {"class": "sel nm"})
+        score = tableData[0].text
+        odds_data[format_team(fixture)] = score
+        sleep(1)
+    return odds_data
+
+
+def parse_score(score):
+    score_regex = re.compile(r'\d-\d')
+    result = score_regex.findall(score)
+    result = ''.join(result)
+    return result
+
+
+def get_data(gameweek):
+    fixtures = read_fixtures(gameweek)
+    odds = get_oddschecker(fixtures)
+    return odds
+
+
+def parse_winner(result):
+    teamRegex = re.compile(r'^\w+\s?\w+\S\D')
+    winner = teamRegex.findall(result)
+    winner = ''.join(winner)
+    winner = winner.rstrip()
+    return winner
+
+
+def write_dropbox(result_dict):
+    dropbox_file = open(dropbox + 'gameweek %d.txt' % (gameweek), 'w')
+    pprint(result_dict)
+    for key, value in result_dict.items():
+        score = parse_score(value)
+        winner = parse_winner(value)
+        teams = key.split(' v ')
+        if winner != teams[0]:
+            dropbox_file.write(teams[0] + ' ' + score[2] + '-' + score[0] + ' ' + teams[1] + '\n')
+        else:
+            dropbox_file.write(teams[0] + ' ' + score + ' ' + teams[1] + '\n')
+    dropbox_file.close()
+
+
+gameweek = getGameweek()
+result_dict = get_data(gameweek)
+write_dropbox(result_dict)
