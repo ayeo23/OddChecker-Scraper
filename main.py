@@ -9,7 +9,8 @@ from time import sleep
 dropbox = '/home/levo/Dropbox/Predictions/'
 
 # setup url
-baseurl = 'http://www.oddschecker.com/football/'
+baseurl = 'http://www.oddschecker.com/'
+sport = 'football/'
 country = 'english/'
 league = 'premier-league/'
 market = 'correct-score/'
@@ -48,7 +49,7 @@ def get_oddschecker(fixtures):
     odds_data = {}
     for fixture in fixtures:
         clean_fixture = fixture.rstrip('\n')  # cleans fixture for url
-        url = baseurl + country + league + clean_fixture.lower() + '/' + market
+        url = baseurl + sport + country + league + clean_fixture.lower() + '/' + market
         try:
             response = requests.get(url)
         except Exception as e:
@@ -80,7 +81,7 @@ def get_data(gameweek):
 
 # returns either home or away team draw
 def parse_winner(result):
-    teamRegex = re.compile(r'^\w+\s?\w+\S\D')
+    teamRegex = re.compile(r'^\D+')
     winner = teamRegex.findall(result)
     winner = ''.join(winner)
     winner = winner.rstrip()
