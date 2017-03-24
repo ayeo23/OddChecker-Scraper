@@ -19,7 +19,27 @@ allthingsfpl is used as it will automatically directs you to the current gamewee
 
 More work may need to be done to make the functions more modulated as currently the script can't be detatched to handle other markets due to **get_oddschecker()** is also used to build the dictonary.
 
-### Oddschecker.com
+### Dependencies
+You will need to pip install the dependencies for the script to run. You will need;
+* requests - to make http requests
+* BeautifulSoup - to download and parse the HTML data
+
+```bash
+pip install requests
+```
+
+```bash
+pip install BeautifulSoup
+```
+
+From the standard library
+
+* re - regular expressions to pick out patterns
+* time - adds a sleep when making request calls so not to bombard too many requests to quickly to a server
+
+
+
+## Oddschecker.com
 http://www.oddschecker.com is a market comparison website looking at the odds across the bookmarker market for a variety of sports and betting markets.
 
 Specially picked oddschecker as the page renders a table which is sorted by the favourite first. The way this is organised is the lowest odds across all the bookmarkers will be at the top of the table.
