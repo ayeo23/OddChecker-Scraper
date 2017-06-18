@@ -3,7 +3,9 @@
 import requests
 import re
 from bs4 import BeautifulSoup
-from time import sleep
+from time import sleep, time
+
+start_time = time()
 
 # direct to dropbox location
 dropbox = '/home/levo/Dropbox/Predictions/'
@@ -31,7 +33,7 @@ def getGameweek():
 
 # Opens files needed to complete URL and download the fixtures for that week.
 def read_fixtures(gameweek):
-    fixturesFile = open(r'./fixtures/gameweek %d' % (gameweek), 'r')
+    fixturesFile = open(r'./2017_18/fixtures/gameweek%d.txt' % (gameweek), 'r')
     readFixtures = fixturesFile.readlines()
     fixturesFile.close()
     return readFixtures
@@ -49,7 +51,8 @@ def get_oddschecker(fixtures):
     odds_data = {}
     for fixture in fixtures:
         clean_fixture = fixture.rstrip('\n')  # cleans fixture for url
-        url = baseurl + sport + country + league + clean_fixture.lower() + '/' + market
+        clean_fixture = clean_fixture.lower()
+        url = baseurl + sport + country + league + clean_fixture + '/' + market
         try:
             response = requests.get(url)
         except Exception as e:
@@ -57,10 +60,13 @@ def get_oddschecker(fixtures):
 
         soup = BeautifulSoup(response.content, "html.parser")
         tableData = soup.find_all("td", {"class": "sel nm"})
-        score = tableData[0].text
-        # creates a dict with team as key and fav correct score as value
-        odds_data[format_team(fixture)] = score
-        sleep(1)
+        try:
+            score = tableData[0].text
+            # creates a dict with team as key and fav correct score as value
+            odds_data[format_team(fixture)] = score
+            sleep(1)
+        except IndexError:
+            print(format_team(fixture) + " fixture not on")
     return odds_data
 
 
@@ -107,6 +113,7 @@ def write_dropbox(result_dict):
     dropbox_file.close()
 
 
-gameweek = getGameweek()
+gameweek = 1
 result_dict = get_data(gameweek)
 write_dropbox(result_dict)
+print('Completed in %d' % (round(time() - start_time)))
